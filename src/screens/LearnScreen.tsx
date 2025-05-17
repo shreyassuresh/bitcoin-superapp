@@ -30,23 +30,31 @@ const LearnScreen = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text variant="headlineMedium">Learn Bitcoin</Text>
-        <Text variant="bodyLarge" style={{ color: theme.colors.primary }}>
+        <View style={styles.titleContainer}>
+          <MaterialCommunityIcons
+            name="bitcoin"
+            size={32}
+            color="#F7931A"
+            style={styles.bitcoinIcon}
+          />
+          <Text variant="headlineMedium">Learn Bitcoin</Text>
+        </View>
+        <Text variant="bodyLarge" style={{ color: '#F7931A' }}>
           Interactive Tutorials & Quizzes
         </Text>
       </View>
 
       <Card style={styles.card}>
         <Card.Content>
-          <Text variant="titleMedium">Your Progress</Text>
+          <Text variant="titleMedium" style={styles.sectionTitle}>Your Progress</Text>
           <View style={styles.progressContainer}>
-            <Text variant="bodyLarge">Overall Completion</Text>
+            <Text variant="bodyLarge" style={styles.progressText}>Overall Completion</Text>
             <ProgressBar
               progress={0.1}
-              color={theme.colors.primary}
+              color="#F7931A"
               style={styles.progressBar}
             />
-            <Text variant="bodySmall">10% Complete</Text>
+            <Text variant="bodySmall" style={styles.progressText}>10% Complete</Text>
           </View>
         </Card.Content>
       </Card>
@@ -58,9 +66,9 @@ const LearnScreen = () => {
               <MaterialCommunityIcons
                 name="book-open-page-variant"
                 size={24}
-                color={theme.colors.primary}
+                color="#F7931A"
               />
-              <Text variant="titleMedium" style={styles.tutorialTitle}>
+              <Text variant="titleMedium" style={[styles.tutorialTitle, { color: '#F7931A' }]}>
                 {tutorial.title}
               </Text>
             </View>
@@ -69,12 +77,12 @@ const LearnScreen = () => {
             </Text>
             <ProgressBar
               progress={tutorial.progress}
-              color={theme.colors.primary}
+              color="#F7931A"
               style={styles.progressBar}
             />
             <Button
               mode="contained"
-              style={styles.button}
+              style={[styles.button, { backgroundColor: '#F7931A' }]}
               onPress={() => {}}
             >
               {tutorial.progress > 0 ? 'Continue' : 'Start'}
@@ -85,11 +93,15 @@ const LearnScreen = () => {
 
       <Card style={styles.card}>
         <Card.Content>
-          <Text variant="titleMedium">Quick Quiz</Text>
+          <Text variant="titleMedium" style={styles.sectionTitle}>Quick Quiz</Text>
           <Text variant="bodyMedium" style={styles.description}>
             Test your knowledge with our daily Bitcoin quiz
           </Text>
-          <Button mode="outlined" style={styles.button}>
+          <Button 
+            mode="outlined" 
+            style={[styles.button, { borderColor: '#F7931A' }]}
+            textColor="#F7931A"
+          >
             Take Quiz
           </Button>
         </Card.Content>
@@ -105,14 +117,39 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 16,
+    paddingTop: 40,
     backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(247, 147, 26, 0.1)',
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  bitcoinIcon: {
+    marginRight: 12,
   },
   card: {
     margin: 16,
     elevation: 4,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+  },
+  sectionTitle: {
+    marginBottom: 16,
+    color: '#2D1B69',
   },
   progressContainer: {
     marginTop: 16,
+    padding: 20,
+    backgroundColor: '#FFF6E5',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(247, 147, 26, 0.1)',
+  },
+  progressText: {
+    color: '#2D1B69',
   },
   progressBar: {
     marginVertical: 8,
@@ -122,17 +159,20 @@ const styles = StyleSheet.create({
   tutorialHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   tutorialTitle: {
-    marginLeft: 8,
+    marginLeft: 12,
+    fontWeight: '600',
   },
   description: {
     marginTop: 8,
     opacity: 0.7,
+    color: '#2D1B69',
   },
   button: {
     marginTop: 16,
+    borderRadius: 8,
   },
 });
 
