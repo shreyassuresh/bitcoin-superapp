@@ -4,7 +4,7 @@ import { Text, Card, Button, useTheme, ActivityIndicator } from 'react-native-pa
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import axios from 'axios';
 
-const API_KEY = '92a0c25c-edbb-49b3-a65a-4b6f781c2199';
+const API_KEY = 'b32781ff152645abbf93e273064a5250';
 
 interface MarketData {
   prices: [number, number][];
@@ -16,6 +16,7 @@ const DeFiScreen = () => {
   const theme = useTheme();
   const [marketData, setMarketData] = useState<MarketData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedTimeframe, setSelectedTimeframe] = useState('24h');
 
   useEffect(() => {
@@ -24,17 +25,33 @@ const DeFiScreen = () => {
 
   const fetchMarketData = async () => {
     try {
+      setLoading(true);
+      setError(null);
       const response = await axios.get<MarketData>('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart', {
         params: {
           vs_currency: 'usd',
           days: '7',
-          interval: 'daily',
+          interval: 'daily'
         },
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'x-cg-api-key': API_KEY
+        }
       });
       setMarketData(response.data);
-      setLoading(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching market data:', error);
+      if (error.response?.status === 429) {
+        setError('Rate limit exceeded. Please try again in a few minutes.');
+      } else if (error.response?.status === 400) {
+        setError('Invalid request. Please check your API configuration.');
+      } else if (error.response?.status === 401) {
+        setError('Invalid API key. Please check your configuration.');
+      } else {
+        setError('Failed to fetch market data. Please try again later.');
+      }
+    } finally {
       setLoading(false);
     }
   };
@@ -137,6 +154,21 @@ const DeFiScreen = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#F7931A" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <Button 
+          mode="contained" 
+          onPress={fetchMarketData}
+          style={{ marginTop: 16 }}
+        >
+          Retry
+        </Button>
       </View>
     );
   }
@@ -252,6 +284,11 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginLeft: 8,
+  },
+  errorText: {
+    color: '#F44336',
+    textAlign: 'center',
+    marginBottom: 16,
   },
 });
 
