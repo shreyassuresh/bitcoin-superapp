@@ -1,117 +1,186 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, Card, Button, useTheme, Portal, Modal, TextInput } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { Text, Card, Button, useTheme, Portal, Modal, TextInput, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import WalletCard from '../components/WalletCard';
+
+interface Transaction {
+  id: string;
+  type: 'send' | 'receive';
+  amount: number;
+  address: string;
+  timestamp: Date;
+  status: 'completed' | 'pending' | 'failed';
+}
 
 const WalletScreen = () => {
   const theme = useTheme();
+  const [balance, setBalance] = useState(1.2345);
   const [showSendModal, setShowSendModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [recipientAddress, setRecipientAddress] = useState('');
   const [amount, setAmount] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([
+    {
+      id: '1',
+      type: 'receive',
+      amount: 0.01,
+      address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+      timestamp: new Date('2024-03-19T10:30:00'),
+      status: 'completed'
+    },
+    {
+      id: '2',
+      type: 'send',
+      amount: 0.005,
+      address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+      timestamp: new Date('2024-03-18T15:45:00'),
+      status: 'completed'
+    }
+  ]);
 
   const handleSend = () => {
-    // TODO: Implement send functionality
-    setShowSendModal(false);
-    setRecipientAddress('');
-    setAmount('');
+    const sendAmount = parseFloat(amount);
+    if (isNaN(sendAmount) || sendAmount <= 0) {
+      Alert.alert('Error', 'Please enter a valid amount');
+      return;
+    }
+    if (sendAmount > balance) {
+      Alert.alert('Error', 'Insufficient balance');
+      return;
+    }
+    if (!recipientAddress) {
+      Alert.alert('Error', 'Please enter a recipient address');
+      return;
+    }
+
+    setIsLoading(true);
+    // Simulate network delay
+    setTimeout(() => {
+      // Update balance
+      setBalance(prevBalance => prevBalance - sendAmount);
+
+      // Add new transaction
+      const newTransaction: Transaction = {
+        id: Date.now().toString(),
+        type: 'send',
+        amount: sendAmount,
+        address: recipientAddress,
+        timestamp: new Date(),
+        status: 'completed'
+      };
+
+      setTransactions(prev => [newTransaction, ...prev]);
+      setShowSendModal(false);
+      setRecipientAddress('');
+      setAmount('');
+      setIsLoading(false);
+      Alert.alert('Success', `${sendAmount} BTC sent successfully!`);
+    }, 1000);
   };
 
+  const handleReceive = () => {
+    setIsLoading(true);
+    // Simulate network delay
+    setTimeout(() => {
+      const receiveAmount = 0.5; // Default receive amount
+
+      // Update balance
+      setBalance(prevBalance => prevBalance + receiveAmount);
+
+      // Add new transaction
+      const newTransaction: Transaction = {
+        id: Date.now().toString(),
+        type: 'receive',
+        amount: receiveAmount,
+        address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+        timestamp: new Date(),
+        status: 'completed'
+      };
+
+      setTransactions(prev => [newTransaction, ...prev]);
+      setShowReceiveModal(false);
+      setIsLoading(false);
+      Alert.alert('Success', `Received ${receiveAmount} BTC!`);
+    }, 1000);
+  };
+
+  const renderTransactionHistory = () => (
+    <Card style={styles.card}>
+      <Card.Content>
+        <Text variant="titleMedium" style={styles.sectionTitle}>Recent Transactions</Text>
+        <ScrollView style={styles.transactionList}>
+          {transactions.map((tx) => (
+            <View key={tx.id} style={styles.transactionItem}>
+              <View style={styles.transactionIcon}>
+                <MaterialCommunityIcons
+                  name={tx.type === 'send' ? 'arrow-up' : 'arrow-down'}
+                  size={24}
+                  color={tx.type === 'send' ? '#F44336' : '#4CAF50'}
+                />
+              </View>
+              <View style={styles.transactionInfo}>
+                <Text variant="bodyMedium">
+                  {tx.type === 'send' ? 'Sent' : 'Received'} {tx.amount} BTC
+                </Text>
+                <Text variant="bodySmall" style={styles.address}>
+                  {tx.address.slice(0, 6)}...{tx.address.slice(-4)}
+                </Text>
+                <Text variant="bodySmall" style={styles.timestamp}>
+                  {tx.timestamp.toLocaleDateString()} {tx.timestamp.toLocaleTimeString()}
+                </Text>
+              </View>
+              <View style={styles.transactionStatus}>
+                <Text
+                  variant="bodySmall"
+                  style={[
+                    styles.status,
+                    { color: tx.status === 'completed' ? '#4CAF50' : '#F44336' }
+                  ]}
+                >
+                  {tx.status}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </Card.Content>
+    </Card>
+  );
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
         <MaterialCommunityIcons name="bitcoin" size={48} color="#F7931A" style={styles.headerIcon} />
         <Text variant="headlineMedium" style={styles.headerTitle}>Bitcoin Wallet</Text>
-        <Text variant="bodyLarge" style={[styles.totalBalance, { color: theme.colors.primary }]}>
-          Total Balance: 1.2345 BTC
+        <Text variant="headlineLarge" style={[styles.balance, { color: '#F7931A' }]}>
+          {balance.toFixed(8)} BTC
+        </Text>
+        <Text variant="bodyLarge" style={styles.usdValue}>
+          ≈ ${(balance * 65000).toLocaleString()}
         </Text>
       </View>
 
-      <Card style={styles.card}>
-        <Card.Content style={styles.cardContent}>
-          <View style={styles.walletHeader}>
-            <MaterialCommunityIcons name="bitcoin" size={28} color={theme.colors.primary} style={{ marginRight: 8 }} />
-            <Text variant="titleMedium">Main Wallet</Text>
-          </View>
-          <View style={styles.addressRow}>
-            <MaterialCommunityIcons name="qrcode" size={20} color="#888" style={{ marginRight: 6 }} />
-            <Text variant="bodyLarge" style={styles.address}>
-              bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
-            </Text>
-          </View>
-          <Text variant="displaySmall" style={styles.balanceBig}>
-            <MaterialCommunityIcons name="bitcoin" size={24} color="#F7931A" /> 1.2345 <Text style={{ color: '#F7931A', fontWeight: 'bold' }}>BTC</Text>
-          </Text>
-        </Card.Content>
-        <Card.Actions style={styles.cardActions}>
-          <Button
-            mode="contained"
-            onPress={() => setShowSendModal(true)}
-            style={styles.roundedButton}
-            contentStyle={styles.buttonContent}
-            buttonColor="#F7931A"
-            textColor="#fff"
-            icon="arrow-up-bold"
-          >
-            Send
-          </Button>
-          <Button
-            mode="contained"
-            onPress={() => setShowReceiveModal(true)}
-            style={styles.roundedButton}
-            contentStyle={styles.buttonContent}
-            buttonColor="#fff"
-            textColor="#F7931A"
-            icon="arrow-down-bold"
-          >
-            Receive
-          </Button>
-        </Card.Actions>
-      </Card>
+      <View style={styles.actionButtons}>
+        <Button
+          mode="contained"
+          onPress={() => setShowSendModal(true)}
+          style={[styles.actionButton, { backgroundColor: '#2D1B69' }]}
+          icon="arrow-up"
+        >
+          Send
+        </Button>
+        <Button
+          mode="contained"
+          onPress={() => setShowReceiveModal(true)}
+          style={[styles.actionButton, { backgroundColor: '#4CAF50' }]}
+          icon="arrow-down"
+        >
+          Receive
+        </Button>
+      </View>
 
-      <Card style={styles.card}>
-        <Card.Content>
-          <Text variant="titleMedium">Recent Transactions</Text>
-          <View style={styles.transactionList}>
-            <View style={styles.transactionItem}>
-              <View style={styles.transactionIcon}>
-                <MaterialCommunityIcons name="arrow-down" size={24} color="#4CAF50" />
-              </View>
-              <View style={styles.transactionInfo}>
-                <Text variant="bodyMedium">Received 0.01 BTC</Text>
-                <Text variant="bodySmall" style={styles.transactionAddress}>
-                  bc1q...0wlh
-                </Text>
-                <Text variant="bodySmall" style={styles.transactionTime}>
-                  Today, 10:30 AM
-                </Text>
-              </View>
-              <Text variant="bodySmall" style={[styles.transactionStatus, { color: '#4CAF50' }]}>
-                Completed
-              </Text>
-            </View>
-
-            <View style={styles.transactionItem}>
-              <View style={styles.transactionIcon}>
-                <MaterialCommunityIcons name="arrow-up" size={24} color="#F44336" />
-              </View>
-              <View style={styles.transactionInfo}>
-                <Text variant="bodyMedium">Sent 0.005 BTC</Text>
-                <Text variant="bodySmall" style={styles.transactionAddress}>
-                  bc1q...0wlh
-                </Text>
-                <Text variant="bodySmall" style={styles.transactionTime}>
-                  Yesterday, 3:45 PM
-                </Text>
-              </View>
-              <Text variant="bodySmall" style={[styles.transactionStatus, { color: '#4CAF50' }]}>
-                Completed
-              </Text>
-            </View>
-          </View>
-        </Card.Content>
-      </Card>
+      {renderTransactionHistory()}
 
       {/* Send Modal */}
       <Portal>
@@ -148,6 +217,8 @@ const WalletScreen = () => {
               mode="contained"
               onPress={handleSend}
               style={[styles.modalButton, { backgroundColor: '#F7931A' }]}
+              loading={isLoading}
+              disabled={isLoading}
             >
               Send
             </Button>
@@ -164,18 +235,50 @@ const WalletScreen = () => {
         >
           <Text variant="titleLarge" style={styles.modalTitle}>Receive Bitcoin</Text>
           <View style={styles.qrContainer}>
-            <MaterialCommunityIcons name="qrcode" size={200} color="#000" />
+            <View style={styles.qrWrapper}>
+              <MaterialCommunityIcons name="qrcode" size={200} color="#000" />
+              <View style={styles.qrCorner} />
+              <View style={[styles.qrCorner, styles.qrCornerTopRight]} />
+              <View style={[styles.qrCorner, styles.qrCornerBottomLeft]} />
+              <View style={[styles.qrCorner, styles.qrCornerBottomRight]} />
+            </View>
+            <Text style={styles.qrLabel}>Scan to receive Bitcoin</Text>
           </View>
-          <Text style={styles.addressText}>
-            bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
-          </Text>
-          <Button
-            mode="contained"
-            onPress={() => setShowReceiveModal(false)}
-            style={[styles.modalButton, { backgroundColor: '#4CAF50' }]}
-          >
-            Close
-          </Button>
+          <View style={styles.addressContainer}>
+            <Text style={styles.addressLabel}>Your Bitcoin Address</Text>
+            <Text style={styles.addressText}>
+              bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
+            </Text>
+            <Button
+              mode="outlined"
+              onPress={() => {
+                // TODO: Implement copy to clipboard
+                Alert.alert('Copied', 'Address copied to clipboard');
+              }}
+              style={styles.copyButton}
+              icon="content-copy"
+            >
+              Copy Address
+            </Button>
+          </View>
+          <View style={styles.receiveActions}>
+            <Button
+              mode="contained"
+              onPress={handleReceive}
+              style={[styles.receiveButton, { backgroundColor: '#4CAF50' }]}
+              loading={isLoading}
+              disabled={isLoading}
+            >
+              Receive
+            </Button>
+            <Button
+              mode="outlined"
+              onPress={() => setShowReceiveModal(false)}
+              style={styles.modalButton}
+            >
+              Close
+            </Button>
+          </View>
         </Modal>
       </Portal>
     </ScrollView>
@@ -187,78 +290,45 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
-    flexGrow: 1,
-  },
   header: {
-    padding: 16,
+    padding: 20,
+    paddingTop: 40,
     backgroundColor: '#ffffff',
-    borderRadius: 16,
-    marginBottom: 16,
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
   headerIcon: {
     marginBottom: 8,
   },
   headerTitle: {
-    marginBottom: 4,
-  },
-  totalBalance: {
-    marginTop: 8,
-  },
-  card: {
-    marginVertical: 8,
-    borderRadius: 16,
-    elevation: 4,
-    overflow: 'hidden',
-    backgroundColor: '#FFF6E5',
-  },
-  cardContent: {
-    paddingBottom: 0,
-  },
-  walletHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 8,
   },
-  addressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 8,
-    opacity: 0.7,
-  },
-  address: {
-    marginVertical: 8,
-    opacity: 0.7,
-  },
-  balanceBig: {
-    fontSize: 32,
-    color: '#F7931A',
+  balance: {
     fontWeight: 'bold',
-    marginTop: 12,
     marginBottom: 4,
-    textAlign: 'center',
   },
-  cardActions: {
+  usdValue: {
+    color: '#666',
+  },
+  actionButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 8,
-    paddingBottom: 12,
-    paddingTop: 4,
+    padding: 16,
+    gap: 16,
   },
-  roundedButton: {
-    borderRadius: 30,
-    marginHorizontal: 4,
-    minWidth: 120,
-    elevation: 2,
+  actionButton: {
+    flex: 1,
   },
-  buttonContent: {
-    height: 44,
+  card: {
+    margin: 16,
+    elevation: 4,
+  },
+  sectionTitle: {
+    marginBottom: 16,
+    color: '#2D1B69',
   },
   transactionList: {
-    marginTop: 16,
+    maxHeight: 400,
   },
   transactionItem: {
     flexDirection: 'row',
@@ -279,15 +349,18 @@ const styles = StyleSheet.create({
   transactionInfo: {
     flex: 1,
   },
-  transactionAddress: {
+  address: {
     color: '#666',
     marginTop: 2,
   },
-  transactionTime: {
+  timestamp: {
     color: '#999',
     marginTop: 2,
   },
   transactionStatus: {
+    marginLeft: 12,
+  },
+  status: {
     fontWeight: 'bold',
   },
   modal: {
@@ -316,13 +389,82 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginVertical: 24,
     padding: 16,
-    backgroundColor: '#f5f5f5',
+  },
+  qrWrapper: {
+    position: 'relative',
+    padding: 16,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  qrCorner: {
+    position: 'absolute',
+    width: 20,
+    height: 20,
+    borderColor: '#4CAF50',
+    borderWidth: 3,
+    top: 0,
+    left: 0,
+  },
+  qrCornerTopRight: {
+    right: 0,
+    left: 'auto',
+    borderLeftWidth: 0,
+    borderBottomWidth: 0,
+  },
+  qrCornerBottomLeft: {
+    top: 'auto',
+    bottom: 0,
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+  },
+  qrCornerBottomRight: {
+    top: 'auto',
+    right: 0,
+    left: 'auto',
+    bottom: 0,
+    borderTopWidth: 0,
+    borderLeftWidth: 0,
+  },
+  qrLabel: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
+  },
+  addressContainer: {
+    alignItems: 'center',
+    marginTop: 8,
+    padding: 16,
+    backgroundColor: '#f8f8f8',
     borderRadius: 8,
+    width: '100%',
+  },
+  addressLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
   },
   addressText: {
+    fontSize: 14,
+    color: '#333',
     textAlign: 'center',
-    marginBottom: 24,
-    color: '#666',
+    marginBottom: 16,
+    fontFamily: 'monospace',
+  },
+  copyButton: {
+    borderColor: '#4CAF50',
+  },
+  receiveActions: {
+    marginTop: 16,
+    gap: 8,
+  },
+  receiveButton: {
+    marginBottom: 8,
   },
 });
 

@@ -14,12 +14,12 @@ interface Transaction {
 
 const WalletCard = () => {
   const theme = useTheme();
-  const [balance, setBalance] = useState(0.0425); // Example balance
+  const [balance, setBalance] = useState(1.2345); // Initial balance
   const [showSendModal, setShowSendModal] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [recipientAddress, setRecipientAddress] = useState('');
   const [amount, setAmount] = useState('');
-  const [transactions] = useState<Transaction[]>([
+  const [transactions, setTransactions] = useState<Transaction[]>([
     {
       id: '1',
       type: 'receive',
@@ -47,10 +47,49 @@ const WalletCard = () => {
   ]);
 
   const handleSend = () => {
-    // TODO: Implement send functionality
+    const sendAmount = parseFloat(amount);
+    if (isNaN(sendAmount) || sendAmount <= 0 || sendAmount > balance) {
+      // TODO: Show error message
+      return;
+    }
+
+    // Update balance
+    setBalance(prevBalance => prevBalance - sendAmount);
+
+    // Add new transaction
+    const newTransaction: Transaction = {
+      id: Date.now().toString(),
+      type: 'send',
+      amount: sendAmount,
+      address: recipientAddress,
+      timestamp: new Date(),
+      status: 'completed'
+    };
+
+    setTransactions(prev => [newTransaction, ...prev]);
     setShowSendModal(false);
     setRecipientAddress('');
     setAmount('');
+  };
+
+  const handleReceive = () => {
+    const receiveAmount = 0.5; // Default receive amount
+
+    // Update balance
+    setBalance(prevBalance => prevBalance + receiveAmount);
+
+    // Add new transaction
+    const newTransaction: Transaction = {
+      id: Date.now().toString(),
+      type: 'receive',
+      amount: receiveAmount,
+      address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+      timestamp: new Date(),
+      status: 'completed'
+    };
+
+    setTransactions(prev => [newTransaction, ...prev]);
+    setShowReceiveModal(false);
   };
 
   const renderTransactionHistory = () => (
@@ -185,13 +224,23 @@ const WalletCard = () => {
           <Text style={styles.addressText}>
             bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh
           </Text>
-          <Button
-            mode="contained"
-            onPress={() => setShowReceiveModal(false)}
-            style={[styles.modalButton, { backgroundColor: '#4CAF50' }]}
-          >
-            Close
-          </Button>
+          <View style={styles.receiveActions}>
+            <Button
+              mode="contained"
+              onPress={handleReceive}
+              style={[styles.receiveButton, { backgroundColor: '#4CAF50' }]}
+              icon="plus"
+            >
+              Receive 0.5 BTC
+            </Button>
+            <Button
+              mode="outlined"
+              onPress={() => setShowReceiveModal(false)}
+              style={styles.modalButton}
+            >
+              Close
+            </Button>
+          </View>
         </Modal>
       </Portal>
     </Card>
@@ -302,6 +351,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
     color: '#666',
+  },
+  receiveActions: {
+    marginTop: 16,
+    gap: 8,
+  },
+  receiveButton: {
+    marginBottom: 8,
   },
 });
 
